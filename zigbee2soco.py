@@ -136,7 +136,7 @@ def on_message(client, z2s, msg):
             print ("Not found after rescan")
             return
 
-    if payload == "play_pause":
+    if payload == "play_pause" or payload == "toggle":
         # both gen1 and gen2 have play_pause
         z2s.pause(topic)
     elif payload == "skip_forward" or payload == "track_next":
