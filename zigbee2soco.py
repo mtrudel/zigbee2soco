@@ -42,6 +42,7 @@ except:
 
 import paho.mqtt.client as mqtt
 import soco
+from soco.plugins.sharelink import ShareLinkPlugin
 import traceback
 
 
@@ -105,6 +106,19 @@ class Z2S:
     def dotslong(self, speaker):
         self.zones[speaker].unjoin()
 
+    def twodots(self, speaker):
+        # Kind of Blue
+        self.zones[speaker].clear_queue()
+        sharelink=ShareLinkPlugin(self.zones[speaker])
+        sharelink.add_share_link_to_queue("https://open.spotify.com/album/4sb0eMpDn3upAFfyi4q2rw?si=Rll4sJsjRpy223qzmPcLxg")
+        self.zones[speaker].play_from_queue(index=0)
+
+    def twodotslong(self, speaker):
+        # Poolside radio
+        self.zones[speaker].clear_queue()
+        sharelink=ShareLinkPlugin(self.zones[speaker])
+        sharelink.add_share_link_to_queue("https://open.spotify.com/playlist/37i9dQZF1E4sEET1Q6Yq9z?si=4f9edbe2eb224c9d")
+        self.zones[speaker].play_from_queue(index=0)
 
 ############## mqtt callbacks ########################
 
@@ -167,6 +181,10 @@ def on_message(client, z2s, msg):
         z2s.dots(topic)
     elif payload == "dots_1_long_press":
         z2s.dotslong(topic)
+    elif payload == "dots_2_initial_press":
+        z2s.twodots(topic)
+    elif payload == "dots_2_long_press":
+        z2s.twodotslong(topic)
 
     # not implemented:
     # dots buttons
