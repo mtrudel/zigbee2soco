@@ -44,6 +44,7 @@ import paho.mqtt.client as mqtt
 import soco
 from soco.plugins.sharelink import ShareLinkPlugin
 import traceback
+import time, datetime
 
 
 
@@ -84,7 +85,14 @@ class Z2S:
     def skipback(self, speaker):
         print("skip back "+speaker)
 
-        self.zones[speaker].group.coordinator.previous()
+        self.state = self.zones[speaker].get_current_transport_info()['current_transport_state']
+        if self.state == "PLAYING":
+            a = time.strptime(self.zones[speaker].get_current_track_info()['position'], "%H:%M:%S")
+            seconds = datetime.timedelta(hours=a.tm_hour, minutes=a.tm_min, seconds=a.tm_sec).seconds
+            if seconds < 5:
+                self.zones[speaker].group.coordinator.previous()
+            else:
+                self.zones[speaker].seek("0:00:00")
 
     def volup(self, speaker):
         self.state = self.zones[speaker].get_current_transport_info()['current_transport_state']
