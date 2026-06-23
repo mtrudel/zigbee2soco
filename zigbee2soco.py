@@ -65,12 +65,12 @@ class Z2S:
 
         if self.state == "PLAYING":
             print("Pause "+speaker)
-            self.zones[speaker].pause()
+            self.zones[speaker].group.coordinator.pause()
 
         else:
             print("Play "+speaker)
             try:
-                self.zones[speaker].play()
+                self.zones[speaker].group.coordinator.play()
             except:
                 print("Unable to play tune on "+speaker+". Try playing something from the Sonos controller first.")
                 pass
@@ -78,12 +78,12 @@ class Z2S:
     def skipforward(self, speaker):
         print("skip forward "+speaker)
 
-        self.zones[speaker].next()
+        self.zones[speaker].group.coordinator.next()
 
     def skipback(self, speaker):
         print("skip back "+speaker)
 
-        self.zones[speaker].previous()
+        self.zones[speaker].group.coordinator.previous()
 
     def volup(self, speaker):
         self.state = self.zones[speaker].get_current_transport_info()['current_transport_state']
@@ -97,6 +97,13 @@ class Z2S:
             nv =  max(self.zones[speaker].volume-multiplier,0)
             self.zones[speaker].volume = nv
 
+    def dots(self, speaker):
+        self.state = self.zones["Kitchen"].get_current_transport_info()['current_transport_state']
+        if self.state == "PLAYING":
+            self.zones[speaker].join(self.zones["Kitchen"])
+
+    def dotslong(self, speaker):
+        self.zones[speaker].unjoin()
 
 
 ############## mqtt callbacks ########################
@@ -156,6 +163,10 @@ def on_message(client, z2s, msg):
     elif payload == "rotate_left"  or payload == "volume_down" or payload == "volume_down_hold":
         # gen1 - rotate, gen2 - volume...
         z2s.voldown(topic)
+    elif payload == "dots_1_initial_press":
+        z2s.dots(topic)
+    elif payload == "dots_1_long_press":
+        z2s.dotslong(topic)
 
     # not implemented:
     # dots buttons
