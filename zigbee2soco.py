@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import sys 
+import sys
 import os
 
 # debug code in case docker doesn't find the modules
@@ -33,13 +33,13 @@ try:
     mqttuser=os.environ.get("MQTT_USER")
 except:
     mqttuser=None
-    
+
 try:
     mqttpass=os.environ.get("MQTT_PASS")
 except:
     mqttpass=None
 
-    
+
 import paho.mqtt.client as mqtt
 import soco
 import traceback
@@ -52,10 +52,10 @@ class Z2S:
 
     def __init__(self):
         self.discover()
-        
+
     def discover(self):
         self.zones = {x.player_name:x for x in  soco.discover()}
-        
+
         print("ZONES: "+str(self.zones))
         return self.zones
 
@@ -66,10 +66,10 @@ class Z2S:
         if self.state == "PLAYING":
             print("Pause "+speaker)
             self.zones[speaker].pause()
-        
+
         else:
             print("Play "+speaker)
-            try:                
+            try:
                 self.zones[speaker].play()
             except:
                 print("Unable to play tune on "+speaker+". Try playing something from the Sonos controller first.")
@@ -79,6 +79,11 @@ class Z2S:
         print("skip forward "+speaker)
 
         self.zones[speaker].next()
+
+    def skipback(self, speaker):
+        print("skip back "+speaker)
+
+        self.zones[speaker].previous()
 
     def volup(self, speaker):
         self.state = self.zones[speaker].get_current_transport_info()['current_transport_state']
@@ -92,7 +97,7 @@ class Z2S:
             nv =  max(self.zones[speaker].volume-multiplier,0)
             self.zones[speaker].volume = nv
 
-        
+
 
 ############## mqtt callbacks ########################
 
@@ -103,7 +108,7 @@ def on_connect(client, z2s, flags, rc):
         print ("MQTT connection refused - bad username or password")
     elif rc==5:
         print("MQTT connection refused - not authorized")
-        
+
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     client.subscribe(mqttprefix+"/+/action")
@@ -112,7 +117,7 @@ def on_connect(client, z2s, flags, rc):
 def on_message(client, z2s, msg):
 
     print(msg.topic+" "+str(msg.payload))
-    
+
     payload = msg.payload.decode("utf-8")
 
     try:
@@ -142,26 +147,29 @@ def on_message(client, z2s, msg):
     elif payload == "skip_forward" or payload == "track_next":
         # gen1 - skip_forward, gen2 - track_next
         z2s.skipforward(topic)
+    elif payload == "track_previous":
+        # gen2 - track_previous
+        z2s.skipback(topic)
     elif payload == "rotate_right" or payload == "volume_up" or payload == "volume_up_hold":
         # gen1 - rotate, gen2 - volume...
         z2s.volup(topic)
-    elif payload == "rotate_left"  or payload == "volume_down" or payload == "volume_down_hold": 
+    elif payload == "rotate_left"  or payload == "volume_down" or payload == "volume_down_hold":
         # gen1 - rotate, gen2 - volume...
         z2s.voldown(topic)
 
     # not implemented:
     # dots buttons
-    
+
     # skip_backward
     # skip_backward can be implemented by calling device_previous() but (in my experience) the wanted behavior is
     # to reset the currently playing tune to 0 at the first click, then, if the skip_backward is pressed again before
     # (a short time) has elapsed, we jump back one tune. This means that we need to get the play time, check it, then do something
-    
-        
+
+
 ################################
 
 z2s = Z2S()
-    
+
 client = mqtt.Client(userdata=z2s)
 if mqttuser:
     #print ("Using mqtt user name "+mqttuser+" / password '"+mqttpass+"'")
@@ -170,7 +178,7 @@ client.on_connect = on_connect
 client.on_message = on_message
 
 
-    
+
 print ("Connecting to "+mqtthost+":"+str(mqttport))
 client.connect(mqtthost, int(mqttport), 60)
 
